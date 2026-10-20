@@ -144,10 +144,14 @@ public final class TMatcher implements TMatchResult {
 
                                 @Override
                                 public String toString() {
-                                    return group(grN);
+                                    String value = group(grN);
+                                    return value != null ? value : "";
                                 }
                             });
                             String group = group(gr);
+                            if (group == null) {
+                                group = "";
+                            }
                             replacementPos += group.length();
                             res.append(group);
 

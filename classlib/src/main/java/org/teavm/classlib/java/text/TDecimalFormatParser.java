@@ -59,8 +59,10 @@ class TDecimalFormatParser {
                 throw new IllegalArgumentException("Expected ';' at " + index + " in " + string);
             }
             negativePrefix = parseText(false, true);
-            parseNumber(false);
-            negativeSuffix = parseText(true, true);
+            if (index < string.length()) {
+                parseNumber(false);
+                negativeSuffix = parseText(true, true);
+            }
         }
     }
 

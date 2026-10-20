@@ -137,7 +137,7 @@ public class AudioContext implements JSObject, EventTarget {
     public native PeriodicWave createPeriodicWave(@JSByRef(optional = true) float[] real,
             @JSByRef(optional = true) float[] image);
 
-    @JSBody(script = "return new Context();")
+    @JSBody(script = "return new AudioContext();")
     @Deprecated
     public static native AudioContext create();
 

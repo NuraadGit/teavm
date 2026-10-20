@@ -92,6 +92,8 @@ public class TDeflater implements TAutoCloseable {
             case JZlib.Z_STREAM_END:
                 finished = true;
                 break;
+            case JZlib.Z_BUF_ERROR:
+                break;
             default:
                 throw new RuntimeException("Error: " + err);
         }
