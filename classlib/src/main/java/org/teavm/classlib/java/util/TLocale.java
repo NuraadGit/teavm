@@ -144,6 +144,21 @@ public final class TLocale implements TCloneable, TSerializable {
         return countryCode;
     }
 
+    public String getISO3Country() {
+        if (countryCode.isEmpty()) {
+            return "";
+        }
+        if (countryCode.length() == 3) {
+            return countryCode;
+        }
+        String iso3 = TLocaleISO3.country(countryCode);
+        if (iso3 == null) {
+            throw new TMissingResourceException("Couldn't find 3-letter country code for " + countryCode,
+                    "FormatData_" + toString(), "ShortCountry");
+        }
+        return iso3;
+    }
+
     public static TLocale getDefault() {
         return defaultLocale;
     }

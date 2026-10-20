@@ -27,14 +27,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import org.teavm.classlib.java.io.TFileInputStream;
 import org.teavm.classlib.java.io.TFileOutputStream;
 import org.teavm.classlib.java.net.TURI;
+import org.teavm.classlib.java.nio.channels.TFileChannel;
 import org.teavm.classlib.java.nio.file.TAccessMode;
 import org.teavm.classlib.java.nio.file.TCopyOption;
 import org.teavm.classlib.java.nio.file.TDirectoryIteratorException;
 import org.teavm.classlib.java.nio.file.TDirectoryStream;
 import org.teavm.classlib.java.nio.file.TFileAlreadyExistsException;
+import org.teavm.classlib.java.nio.file.TFileStore;
 import org.teavm.classlib.java.nio.file.TFileSystem;
 import org.teavm.classlib.java.nio.file.TFileSystemAlreadyExistsException;
 import org.teavm.classlib.java.nio.file.TFileSystemException;
@@ -44,8 +47,10 @@ import org.teavm.classlib.java.nio.file.TOpenOption;
 import org.teavm.classlib.java.nio.file.TPath;
 import org.teavm.classlib.java.nio.file.TStandardCopyOption;
 import org.teavm.classlib.java.nio.file.TStandardOpenOption;
+import org.teavm.classlib.java.nio.file.attribute.TBasicFileAttributeView;
 import org.teavm.classlib.java.nio.file.attribute.TBasicFileAttributes;
 import org.teavm.classlib.java.nio.file.attribute.TFileAttribute;
+import org.teavm.classlib.java.nio.file.attribute.TFileAttributeView;
 import org.teavm.classlib.java.nio.file.attribute.TFileTime;
 import org.teavm.classlib.java.nio.file.spi.TFileSystemProvider;
 
@@ -91,7 +96,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
     @Override
     public InputStream newInputStream(TPath path, TOpenOption... options) throws IOException {
         for (var option : options) {
-            if (option != TStandardOpenOption.READ || option != TLinkOption.NOFOLLOW_LINKS) {
+            if (option != TStandardOpenOption.READ && option != TLinkOption.NOFOLLOW_LINKS) {
                 throw new UnsupportedOperationException();
             }
         }
@@ -168,6 +173,125 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             accessor.seek(0);
         }
         return new TFileOutputStream(accessor);
+    }
+
+    @Override
+    public TFileChannel newFileChannel(TPath path, Set<? extends TOpenOption> options, TFileAttribute<?>... attrs)
+            throws IOException {
+        var read = false;
+        var write = false;
+        var append = false;
+        var create = false;
+        var createNew = false;
+        var truncate = false;
+        for (var option : options) {
+            if (option instanceof TStandardOpenOption) {
+                switch ((TStandardOpenOption) option) {
+                    case READ:
+                        read = true;
+                        break;
+                    case WRITE:
+                        write = true;
+                        break;
+                    case APPEND:
+                        append = true;
+                        write = true;
+                        break;
+                    case CREATE:
+                        create = true;
+                        break;
+                    case CREATE_NEW:
+                        createNew = true;
+                        break;
+                    case TRUNCATE_EXISTING:
+                        truncate = true;
+                        break;
+                    case SYNC:
+                    case DSYNC:
+                    case SPARSE:
+                    case DELETE_ON_CLOSE:
+                        break;
+                }
+            } else if (option != TLinkOption.NOFOLLOW_LINKS) {
+                throw new UnsupportedOperationException();
+            }
+        }
+        if (!read && !write) {
+            read = true;
+        }
+        if (append && (read || truncate)) {
+            throw new IllegalArgumentException("APPEND + READ/TRUNCATE_EXISTING not allowed");
+        }
+        var defaultPath = (TDefaultPath) path;
+        var vfs = defaultPath.getFileSystem().vfs;
+        var vfile = vfs.getFile(defaultPath.pathString);
+        if (vfile == null || !vfile.exists()) {
+            if (!write || (!create && !createNew)) {
+                throw new NoSuchFileException(defaultPath.pathString);
+            }
+            var parentPath = defaultPath.getParent();
+            var parentVfile = vfs.getFile(parentPath != null ? parentPath.pathString : ".");
+            if (parentVfile == null || !parentVfile.isDirectory()) {
+                throw new NoSuchFileException(defaultPath.pathString);
+            }
+            parentVfile.createFile(defaultPath.getFileName().toString());
+            vfile = vfs.getFile(defaultPath.pathString);
+        } else if (vfile.isDirectory()) {
+            throw new TFileSystemException(defaultPath.pathString, null, "Is a directory");
+        } else if (createNew && write) {
+            throw new FileAlreadyExistsException(defaultPath.pathString);
+        }
+        var accessor = vfile.createAccessor(true, write, true);
+        if (accessor == null) {
+            throw new AccessDeniedException(defaultPath.pathString);
+        }
+        if (write && truncate) {
+            accessor.resize(0);
+        }
+        accessor.seek(append ? accessor.size() : 0);
+        return new TVirtualFileChannel(accessor, read, write, append);
+    }
+
+    @Override
+    public TFileStore getFileStore(TPath path) throws IOException {
+        var defaultPath = (TDefaultPath) path;
+        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        if (vfile == null || !vfile.exists()) {
+            throw new NoSuchFileException(defaultPath.pathString);
+        }
+        return TDefaultFileStore.INSTANCE;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <V extends TFileAttributeView> V getFileAttributeView(TPath path, Class<V> type, TLinkOption... options) {
+        if (type != TBasicFileAttributeView.class) {
+            return null;
+        }
+        var defaultPath = (TDefaultPath) path;
+        return (V) new TBasicFileAttributeView() {
+            @Override
+            public String name() {
+                return "basic";
+            }
+
+            @Override
+            public TBasicFileAttributes readAttributes() throws IOException {
+                return TDefaultFileSystemProvider.this.readAttributes(defaultPath, TBasicFileAttributes.class);
+            }
+
+            @Override
+            public void setTimes(TFileTime lastModifiedTime, TFileTime lastAccessTime, TFileTime createTime)
+                    throws IOException {
+                var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+                if (vfile == null || !vfile.exists()) {
+                    throw new NoSuchFileException(defaultPath.pathString);
+                }
+                if (lastModifiedTime != null) {
+                    vfile.setLastModified(lastModifiedTime.toMillis());
+                }
+            }
+        };
     }
 
     @Override

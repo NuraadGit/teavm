@@ -29,17 +29,59 @@ public final class TBase64 {
         return new Encoder(Base64Impl.urlAlphabet, false);
     }
 
+    public static Encoder getMimeEncoder() {
+        return new Encoder(Base64Impl.alphabet, true, 76, new byte[] { '\r', '\n' });
+    }
+
+    public static Encoder getMimeEncoder(int lineLength, byte[] lineSeparator) {
+        for (byte b : lineSeparator) {
+            if (Base64Impl.reverse[b & 0xFF] != -1 || b == '=') {
+                throw new IllegalArgumentException("Illegal base64 line separator character 0x"
+                        + Integer.toString(b, 16));
+            }
+        }
+        lineLength &= ~3;
+        if (lineLength <= 0) {
+            return new Encoder(Base64Impl.alphabet, true);
+        }
+        return new Encoder(Base64Impl.alphabet, true, lineLength, lineSeparator.clone());
+    }
+
     public static class Encoder {
         private final byte[] mapping;
         private final boolean padding;
+        private final int lineLength;
+        private final byte[] lineSeparator;
 
         private Encoder(byte[] mapping, boolean padding) {
+            this(mapping, padding, 0, null);
+        }
+
+        private Encoder(byte[] mapping, boolean padding, int lineLength, byte[] lineSeparator) {
             this.mapping = mapping;
             this.padding = padding;
+            this.lineLength = lineLength;
+            this.lineSeparator = lineSeparator;
         }
 
         public byte[] encode(byte[] src) {
-            return Base64Impl.encode(src, mapping, padding);
+            byte[] encoded = Base64Impl.encode(src, mapping, padding);
+            if (lineSeparator == null || encoded.length <= lineLength) {
+                return encoded;
+            }
+            int lines = (encoded.length - 1) / lineLength;
+            byte[] result = new byte[encoded.length + lines * lineSeparator.length];
+            int j = 0;
+            for (int i = 0; i < encoded.length; i += lineLength) {
+                if (i > 0) {
+                    System.arraycopy(lineSeparator, 0, result, j, lineSeparator.length);
+                    j += lineSeparator.length;
+                }
+                int len = Math.min(lineLength, encoded.length - i);
+                System.arraycopy(encoded, i, result, j, len);
+                j += len;
+            }
+            return result;
         }
 
         public String encodeToString(byte[] src) {
@@ -52,7 +94,7 @@ public final class TBase64 {
         }
 
         public Encoder withoutPadding() {
-            return new Encoder(mapping, false);
+            return new Encoder(mapping, false, lineLength, lineSeparator);
         }
     }
 
@@ -64,14 +106,44 @@ public final class TBase64 {
         return new Decoder(Base64Impl.urlReverse);
     }
 
+    public static Decoder getMimeDecoder() {
+        return new Decoder(Base64Impl.reverse, true);
+    }
+
     public static class Decoder {
         private final int[] mapping;
+        private final boolean mime;
 
         private Decoder(int[] mapping) {
+            this(mapping, false);
+        }
+
+        private Decoder(int[] mapping, boolean mime) {
             this.mapping = mapping;
+            this.mime = mime;
         }
 
         public byte[] decode(byte[] src) {
+            if (mime) {
+                int count = 0;
+                for (int i = 0; i < src.length; ++i) {
+                    int b = src[i] & 0xFF;
+                    if (mapping[b] != -1 || b == '=') {
+                        ++count;
+                    }
+                }
+                if (count != src.length) {
+                    byte[] filtered = new byte[count];
+                    int j = 0;
+                    for (int i = 0; i < src.length; ++i) {
+                        int b = src[i] & 0xFF;
+                        if (mapping[b] != -1 || b == '=') {
+                            filtered[j++] = src[i];
+                        }
+                    }
+                    src = filtered;
+                }
+            }
             return Base64Impl.decode(src, mapping);
         }
 

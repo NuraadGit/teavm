@@ -18,8 +18,11 @@ package org.teavm.classlib.java.util.stream;
 import java.util.Spliterator;
 import java.util.function.Supplier;
 import org.teavm.classlib.java.util.TSpliterator;
+import org.teavm.classlib.java.util.stream.doubleimpl.TDoubleStreamOverSpliterator;
 import org.teavm.classlib.java.util.stream.impl.TStreamOverSpliterator;
 import org.teavm.classlib.java.util.stream.impl.TStreamOverSpliteratorSupplier;
+import org.teavm.classlib.java.util.stream.intimpl.TIntStreamOverSpliterator;
+import org.teavm.classlib.java.util.stream.longimpl.TLongStreamOverSpliterator;
 
 public final class TStreamSupport {
     private TStreamSupport() {
@@ -31,5 +34,17 @@ public final class TStreamSupport {
 
     public static <T> TStream<T> stream(Supplier<Spliterator<T>> spliterator, int characteristics, boolean parallel) {
         return new TStreamOverSpliteratorSupplier<>(spliterator, characteristics);
+    }
+
+    public static TIntStream intStream(TSpliterator.OfInt spliterator, boolean parallel) {
+        return new TIntStreamOverSpliterator(spliterator);
+    }
+
+    public static TLongStream longStream(TSpliterator.OfLong spliterator, boolean parallel) {
+        return new TLongStreamOverSpliterator(spliterator);
+    }
+
+    public static TDoubleStream doubleStream(TSpliterator.OfDouble spliterator, boolean parallel) {
+        return new TDoubleStreamOverSpliterator(spliterator);
     }
 }

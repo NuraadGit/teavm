@@ -27,12 +27,14 @@ import org.teavm.classlib.java.nio.TByteBuffer;
 import org.teavm.classlib.java.nio.TCharBuffer;
 import org.teavm.classlib.java.nio.charset.TCharset;
 import org.teavm.classlib.java.nio.charset.impl.TUTF8Charset;
+import org.teavm.classlib.java.util.TArrayList;
 import org.teavm.classlib.java.util.TArrays;
 import org.teavm.classlib.java.util.TComparator;
 import org.teavm.classlib.java.util.TFormatter;
 import org.teavm.classlib.java.util.TLocale;
 import org.teavm.classlib.java.util.regex.TPattern;
 import org.teavm.classlib.java.util.stream.TIntStream;
+import org.teavm.classlib.java.util.stream.TStream;
 import org.teavm.classlib.java.util.stream.intimpl.TStringCharsStream;
 import org.teavm.classlib.java.util.stream.intimpl.TStringCodePointsStream;
 import org.teavm.dependency.PluggableDependency;
@@ -91,6 +93,19 @@ public final class TString extends TObject implements TSerializable, TComparable
 
     public TString(byte[] bytes, int offset, int length, TCharset charset) {
         initWithBytes(bytes, offset, length, charset);
+    }
+
+    @Deprecated
+    public TString(byte[] ascii, int hibyte, int offset, int count) {
+        if (offset < 0 || count < 0 || offset > ascii.length - count) {
+            throw new TIndexOutOfBoundsException();
+        }
+        char[] chars = new char[count];
+        int high = (hibyte & 0xFF) << 8;
+        for (int i = 0; i < count; ++i) {
+            chars[i] = (char) (high | (ascii[offset + i] & 0xFF));
+        }
+        initWithCharArray(chars, 0, count);
     }
 
     public TString(byte[] bytes, int offset, int length) {
@@ -1064,6 +1079,29 @@ public final class TString extends TObject implements TSerializable, TComparable
             sb.append(iter.next());
         }
         return sb.toString();
+    }
+
+    public TStream<TString> lines() {
+        var result = new TArrayList<TString>();
+        int len = length();
+        int start = 0;
+        int i = 0;
+        while (i < len) {
+            char c = charAt(i);
+            if (c == '\n' || c == '\r') {
+                result.add(substring(start, i));
+                if (c == '\r' && i + 1 < len && charAt(i + 1) == '\n') {
+                    ++i;
+                }
+                start = ++i;
+            } else {
+                ++i;
+            }
+        }
+        if (start < len) {
+            result.add(substring(start, len));
+        }
+        return result.stream();
     }
 
     public TString repeat(int count) {

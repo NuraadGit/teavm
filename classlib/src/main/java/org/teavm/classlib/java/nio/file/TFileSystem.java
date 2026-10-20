@@ -16,6 +16,7 @@
 package org.teavm.classlib.java.nio.file;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Set;
 import org.teavm.classlib.java.nio.file.spi.TFileSystemProvider;
 
@@ -33,4 +34,8 @@ public abstract class TFileSystem implements Closeable {
     public abstract Set<String> supportedFileAttributeViews();
 
     public abstract TFileSystemProvider provider();
+
+    public abstract TPathMatcher getPathMatcher(String syntaxAndPattern);
+
+    public abstract TWatchService newWatchService() throws IOException;
 }

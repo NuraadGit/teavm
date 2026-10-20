@@ -314,6 +314,11 @@ public final class TURL implements Serializable {
         return strmHandler.openConnection(this);
     }
 
+    public TURLConnection openConnection(TProxy proxy) throws IOException {
+        Objects.requireNonNull(proxy, "proxy");
+        return strmHandler.openConnection(this);
+    }
+
     public TURI toURI() throws TURISyntaxException {
         return new TURI(toExternalForm());
     }

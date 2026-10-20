@@ -23,10 +23,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import org.teavm.classlib.java.net.TURI;
+import org.teavm.classlib.java.nio.channels.TFileChannel;
+import org.teavm.classlib.java.nio.channels.TSeekableByteChannel;
 import org.teavm.classlib.java.nio.file.TAccessMode;
 import org.teavm.classlib.java.nio.file.TCopyOption;
 import org.teavm.classlib.java.nio.file.TDirectoryStream;
+import org.teavm.classlib.java.nio.file.TFileStore;
 import org.teavm.classlib.java.nio.file.TFileSystem;
 import org.teavm.classlib.java.nio.file.TLinkOption;
 import org.teavm.classlib.java.nio.file.TNoSuchFileException;
@@ -34,6 +38,7 @@ import org.teavm.classlib.java.nio.file.TOpenOption;
 import org.teavm.classlib.java.nio.file.TPath;
 import org.teavm.classlib.java.nio.file.attribute.TBasicFileAttributes;
 import org.teavm.classlib.java.nio.file.attribute.TFileAttribute;
+import org.teavm.classlib.java.nio.file.attribute.TFileAttributeView;
 import org.teavm.classlib.java.nio.file.impl.TDefaultFileSystemProvider;
 
 public abstract class TFileSystemProvider {
@@ -58,6 +63,41 @@ public abstract class TFileSystemProvider {
 
     public
     OutputStream newOutputStream(TPath path, TOpenOption... options) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public TFileChannel newFileChannel(TPath path, Set<? extends TOpenOption> options, TFileAttribute<?>... attrs)
+            throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public TSeekableByteChannel newByteChannel(TPath path, Set<? extends TOpenOption> options,
+            TFileAttribute<?>... attrs) throws IOException {
+        return newFileChannel(path, options, attrs);
+    }
+
+    public TFileStore getFileStore(TPath path) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public <V extends TFileAttributeView> V getFileAttributeView(TPath path, Class<V> type, TLinkOption... options) {
+        return null;
+    }
+
+    public Map<String, Object> readAttributes(TPath path, String attributes, TLinkOption... options)
+            throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setAttribute(TPath path, String attribute, Object value, TLinkOption... options) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void createLink(TPath link, TPath existing) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void createSymbolicLink(TPath link, TPath target, TFileAttribute<?>... attrs) throws IOException {
         throw new UnsupportedOperationException();
     }
 

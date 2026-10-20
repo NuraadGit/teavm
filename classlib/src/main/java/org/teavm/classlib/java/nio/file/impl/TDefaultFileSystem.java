@@ -18,8 +18,11 @@ package org.teavm.classlib.java.nio.file.impl;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.teavm.classlib.java.nio.file.TFileSystem;
 import org.teavm.classlib.java.nio.file.TPath;
+import org.teavm.classlib.java.nio.file.TPathMatcher;
+import org.teavm.classlib.java.nio.file.TWatchService;
 import org.teavm.classlib.java.nio.file.spi.TFileSystemProvider;
 import org.teavm.runtime.fs.VirtualFileSystem;
 import org.teavm.runtime.fs.VirtualFileSystemProvider;
@@ -30,6 +33,31 @@ public class TDefaultFileSystem extends TFileSystem {
 
     private TDefaultFileSystem() {
         this.vfs = VirtualFileSystemProvider.getInstance();
+    }
+
+    @Override
+    public TWatchService newWatchService() {
+        return new TPollingWatchService();
+    }
+
+    @Override
+    public TPathMatcher getPathMatcher(String syntaxAndPattern) {
+        int colon = syntaxAndPattern.indexOf(':');
+        if (colon <= 0) {
+            throw new IllegalArgumentException();
+        }
+        String syntax = syntaxAndPattern.substring(0, colon);
+        String input = syntaxAndPattern.substring(colon + 1);
+        String expr;
+        if (syntax.equalsIgnoreCase("glob")) {
+            expr = TGlobs.toRegex(input, getSeparatorChar());
+        } else if (syntax.equalsIgnoreCase("regex")) {
+            expr = input;
+        } else {
+            throw new UnsupportedOperationException("Syntax '" + syntax + "' not recognized");
+        }
+        Pattern pattern = Pattern.compile(expr);
+        return path -> pattern.matcher(path.toString()).matches();
     }
 
     @Override

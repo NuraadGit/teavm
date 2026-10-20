@@ -102,6 +102,37 @@ public class TLong extends TNumber implements TComparable<TLong> {
         return negative ? -value : value;
     }
 
+    public static long parseUnsignedLong(String s, int radix) throws TNumberFormatException {
+        if (s == null) {
+            throw new TNumberFormatException("String is null");
+        }
+        int len = s.length();
+        if (len == 0) {
+            throw new TNumberFormatException("String is empty");
+        }
+        if (s.charAt(0) == '-') {
+            throw new TNumberFormatException("Illegal leading minus sign on unsigned string " + s);
+        }
+        if (len <= 12 || (radix == 10 && len <= 18)) {
+            return parseLong(s, radix);
+        }
+        long first = parseLong(s.substring(0, len - 1), radix);
+        int second = TCharacter.digit(s.charAt(len - 1), radix);
+        if (second < 0) {
+            throw new TNumberFormatException("Bad digit at end of " + s);
+        }
+        long result = first * radix + second;
+        int guard = radix * (int) (first >>> 57);
+        if (guard >= 128 || (result >= 0 && guard >= 128 - TCharacter.MAX_RADIX)) {
+            throw new TNumberFormatException("String value " + s + " exceeds range of unsigned long");
+        }
+        return result;
+    }
+
+    public static long parseUnsignedLong(String s) throws TNumberFormatException {
+        return parseUnsignedLong(s, 10);
+    }
+
     public static long parseLong(String s) throws TNumberFormatException {
         return parseLong(s, 10);
     }

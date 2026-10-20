@@ -16,6 +16,7 @@
 package org.teavm.classlib.java.io;
 
 import java.io.IOException;
+import java.util.Objects;
 import org.teavm.classlib.java.lang.TMath;
 import org.teavm.classlib.java.lang.TObject;
 import org.teavm.classlib.java.lang.TReadable;
@@ -79,6 +80,28 @@ public abstract class TReader implements TCloseable, TReadable {
             skipped += charsRead;
         }
         return skipped;
+    }
+
+    public long transferTo(TWriter out) throws IOException {
+        Objects.requireNonNull(out, "out");
+        long transferred = 0;
+        char[] buffer = new char[8192];
+        int nRead;
+        while ((nRead = read(buffer, 0, buffer.length)) >= 0) {
+            out.write(buffer, 0, nRead);
+            transferred += nRead;
+        }
+        return transferred;
+    }
+
+    public String readAllAsString() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        char[] buffer = new char[8192];
+        int nRead;
+        while ((nRead = read(buffer, 0, buffer.length)) >= 0) {
+            sb.append(buffer, 0, nRead);
+        }
+        return sb.toString();
     }
 
     public boolean ready() throws IOException {

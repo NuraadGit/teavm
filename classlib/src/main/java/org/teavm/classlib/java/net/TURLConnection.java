@@ -59,6 +59,18 @@ public abstract class TURLConnection {
         return getHeaderFieldInt("Content-Length", -1);
     }
 
+    public long getContentLengthLong() {
+        String value = getHeaderField("Content-Length");
+        if (value == null) {
+            return -1;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
     public String getContentType() {
         return getHeaderField("Content-Type");
     }

@@ -15,6 +15,7 @@
  */
 package org.teavm.model.util;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -145,6 +146,14 @@ public class AsyncMethodFinder {
     }
 
     private void add(MethodReference methodRef, CallStack stack) {
+        var queue = new ArrayDeque<MethodReference>();
+        queue.add(methodRef);
+        while (!queue.isEmpty()) {
+            addSingle(queue.pollLast(), queue);
+        }
+    }
+
+    private void addSingle(MethodReference methodRef, ArrayDeque<MethodReference> queue) {
         if (methodRef.getClassName().equals(Fiber.class.getName())) {
             return;
         }
@@ -172,7 +181,7 @@ public class AsyncMethodFinder {
         }
         for (CallSite callSite : node.getCallerCallSites()) {
             for (CallGraphNode caller : callSite.getCallers()) {
-                add(caller.getMethod(), new CallStack(caller.getMethod(), stack));
+                queue.add(caller.getMethod());
             }
         }
     }

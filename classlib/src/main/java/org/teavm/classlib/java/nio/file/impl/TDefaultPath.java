@@ -20,7 +20,12 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.teavm.classlib.java.net.TURI;
 import org.teavm.classlib.java.nio.file.TLinkOption;
+import org.teavm.classlib.java.nio.file.TNotDirectoryException;
 import org.teavm.classlib.java.nio.file.TPath;
+import org.teavm.classlib.java.nio.file.TProviderMismatchException;
+import org.teavm.classlib.java.nio.file.TWatchEvent;
+import org.teavm.classlib.java.nio.file.TWatchKey;
+import org.teavm.classlib.java.nio.file.TWatchService;
 
 public class TDefaultPath implements TPath {
     private TDefaultFileSystem fs;
@@ -30,6 +35,19 @@ public class TDefaultPath implements TPath {
     public TDefaultPath(TDefaultFileSystem fs, String pathString) {
         this.fs = fs;
         this.pathString = pathString;
+    }
+
+    @Override
+    public TWatchKey register(TWatchService watcher, TWatchEvent.Kind<?>[] events, TWatchEvent.Modifier... modifiers)
+            throws IOException {
+        if (!(watcher instanceof TPollingWatchService)) {
+            throw new TProviderMismatchException();
+        }
+        var vfile = fs.vfs.getFile(pathString);
+        if (vfile == null || !vfile.isDirectory()) {
+            throw new TNotDirectoryException(pathString);
+        }
+        return ((TPollingWatchService) watcher).register(this, events);
     }
 
     @Override

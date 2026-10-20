@@ -439,6 +439,40 @@ public final class TMath extends TObject {
         return (a ^ b) >= 0 && div * b != a ? div + 1 : div;
     }
 
+    public static int powExact(int x, int n) {
+        if (n < 0) {
+            throw new ArithmeticException("negative exponent");
+        }
+        int result = 1;
+        while (n != 0) {
+            if ((n & 1) != 0) {
+                result = multiplyExact(result, x);
+            }
+            n >>>= 1;
+            if (n != 0) {
+                x = multiplyExact(x, x);
+            }
+        }
+        return result;
+    }
+
+    public static long powExact(long x, int n) {
+        if (n < 0) {
+            throw new ArithmeticException("negative exponent");
+        }
+        long result = 1;
+        while (n != 0) {
+            if ((n & 1) != 0) {
+                result = multiplyExact(result, x);
+            }
+            n >>>= 1;
+            if (n != 0) {
+                x = multiplyExact(x, x);
+            }
+        }
+        return result;
+    }
+
     public static int ceilDivExact(int a, int b) {
         if (a == Integer.MIN_VALUE && b == -1) {
             throw new ArithmeticException();

@@ -199,6 +199,18 @@ public final class TClass<T> extends TObject implements TGenericDeclaration, TTy
         return getDeclaringClass() != null;
     }
 
+    public boolean isAnonymousClass() {
+        return !isArray() && getEnclosingClass() != null && getDeclaringClass() == null && getSimpleName().isEmpty();
+    }
+
+    public TType getGenericSuperclass() {
+        return getSuperclass();
+    }
+
+    public TType[] getGenericInterfaces() {
+        return getInterfaces().clone();
+    }
+
     public TClass<?> getComponentType() {
         var itemTypeInfo = classInfo.itemType();
         return itemTypeInfo != null ?  (TClass<?>) (Object) itemTypeInfo.classObject() : null;

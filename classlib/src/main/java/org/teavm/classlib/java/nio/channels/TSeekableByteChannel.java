@@ -18,7 +18,7 @@ package org.teavm.classlib.java.nio.channels;
 import java.io.IOException;
 
 public interface TSeekableByteChannel extends TByteChannel {
-    long position();
+    long position() throws IOException;
 
     TSeekableByteChannel position(long newPosition) throws IOException;
 

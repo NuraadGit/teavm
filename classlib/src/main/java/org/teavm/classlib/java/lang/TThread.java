@@ -148,6 +148,13 @@ public class TThread extends TObject implements TRunnable {
         join(0);
     }
 
+    public static void onSpinWait() {
+    }
+
+    public static void dumpStack() {
+        new Exception("Stack trace").printStackTrace();
+    }
+
     public static void yield() {
         TThread currentThread = currentThread();
         if (++currentThread.yieldCount < 30) {

@@ -39,9 +39,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.teavm.classlib.java.lang.TSystem;
+import org.teavm.classlib.java.nio.channels.TSeekableByteChannel;
+import org.teavm.classlib.java.nio.file.attribute.TBasicFileAttributeView;
 import org.teavm.classlib.java.nio.file.attribute.TBasicFileAttributes;
 import org.teavm.classlib.java.nio.file.attribute.TFileAttribute;
+import org.teavm.classlib.java.nio.file.attribute.TFileAttributeView;
 import org.teavm.classlib.java.nio.file.attribute.TFileTime;
+import org.teavm.classlib.java.nio.file.attribute.TPosixFileAttributeView;
+import org.teavm.classlib.java.nio.file.attribute.TPosixFileAttributes;
+import org.teavm.classlib.java.nio.file.attribute.TPosixFilePermission;
 
 public final class TFiles {
     private TFiles() {
@@ -141,6 +147,57 @@ public final class TFiles {
             }
             sb.append(c);
         }
+    }
+
+    public static TSeekableByteChannel newByteChannel(TPath path, Set<? extends TOpenOption> options,
+            TFileAttribute<?>... attrs) throws IOException {
+        return path.getFileSystem().provider().newByteChannel(path, options, attrs);
+    }
+
+    public static TSeekableByteChannel newByteChannel(TPath path, TOpenOption... options) throws IOException {
+        return newByteChannel(path, Set.of(options));
+    }
+
+    public static TFileStore getFileStore(TPath path) throws IOException {
+        return path.getFileSystem().provider().getFileStore(path);
+    }
+
+    public static TPath createLink(TPath link, TPath existing) throws IOException {
+        link.getFileSystem().provider().createLink(link, existing);
+        return link;
+    }
+
+    public static TPath createSymbolicLink(TPath link, TPath target, TFileAttribute<?>... attrs) throws IOException {
+        link.getFileSystem().provider().createSymbolicLink(link, target, attrs);
+        return link;
+    }
+
+    public static <V extends TFileAttributeView> V getFileAttributeView(TPath path, Class<V> type,
+            TLinkOption... options) {
+        return path.getFileSystem().provider().getFileAttributeView(path, type, options);
+    }
+
+    public static TPath setLastModifiedTime(TPath path, TFileTime time) throws IOException {
+        TBasicFileAttributeView view = getFileAttributeView(path, TBasicFileAttributeView.class);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.setTimes(Objects.requireNonNull(time), null, null);
+        return path;
+    }
+
+    public static Set<TPosixFilePermission> getPosixFilePermissions(TPath path, TLinkOption... options)
+            throws IOException {
+        return readAttributes(path, TPosixFileAttributes.class, options).permissions();
+    }
+
+    public static TPath setPosixFilePermissions(TPath path, Set<TPosixFilePermission> perms) throws IOException {
+        TPosixFileAttributeView view = getFileAttributeView(path, TPosixFileAttributeView.class);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.setPermissions(perms);
+        return path;
     }
 
     public static void delete(TPath path) throws IOException {

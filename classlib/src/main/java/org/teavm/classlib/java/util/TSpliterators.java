@@ -17,6 +17,8 @@ package org.teavm.classlib.java.util;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
@@ -333,5 +335,334 @@ public class TSpliterators {
                 return characteristics;
             }
         };
+    }
+
+    private static final TSpliterator<Object> EMPTY_SPLITERATOR = new EmptySpliterator<>();
+    private static final TSpliterator.OfInt EMPTY_INT_SPLITERATOR = new EmptyIntSpliterator();
+    private static final TSpliterator.OfLong EMPTY_LONG_SPLITERATOR = new EmptyLongSpliterator();
+    private static final TSpliterator.OfDouble EMPTY_DOUBLE_SPLITERATOR = new EmptyDoubleSpliterator();
+
+    @SuppressWarnings("unchecked")
+    public static <T> TSpliterator<T> emptySpliterator() {
+        return (TSpliterator<T>) EMPTY_SPLITERATOR;
+    }
+
+    public static TSpliterator.OfInt emptyIntSpliterator() {
+        return EMPTY_INT_SPLITERATOR;
+    }
+
+    public static TSpliterator.OfLong emptyLongSpliterator() {
+        return EMPTY_LONG_SPLITERATOR;
+    }
+
+    public static TSpliterator.OfDouble emptyDoubleSpliterator() {
+        return EMPTY_DOUBLE_SPLITERATOR;
+    }
+
+    public static <T> Iterator<T> iterator(TSpliterator<? extends T> spliterator) {
+        Objects.requireNonNull(spliterator);
+        return new Iterator<T>() {
+            boolean ready;
+            T next;
+
+            @Override
+            public boolean hasNext() {
+                if (!ready) {
+                    ready = spliterator.tryAdvance(t -> next = t);
+                }
+                return ready;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                ready = false;
+                T result = next;
+                next = null;
+                return result;
+            }
+        };
+    }
+
+    public static PrimitiveIterator.OfInt iterator(TSpliterator.OfInt spliterator) {
+        Objects.requireNonNull(spliterator);
+        return new PrimitiveIterator.OfInt() {
+            boolean ready;
+            int next;
+
+            @Override
+            public boolean hasNext() {
+                if (!ready) {
+                    ready = spliterator.tryAdvance((IntConsumer) t -> next = t);
+                }
+                return ready;
+            }
+
+            @Override
+            public int nextInt() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                ready = false;
+                return next;
+            }
+        };
+    }
+
+    public static PrimitiveIterator.OfLong iterator(TSpliterator.OfLong spliterator) {
+        Objects.requireNonNull(spliterator);
+        return new PrimitiveIterator.OfLong() {
+            boolean ready;
+            long next;
+
+            @Override
+            public boolean hasNext() {
+                if (!ready) {
+                    ready = spliterator.tryAdvance((LongConsumer) t -> next = t);
+                }
+                return ready;
+            }
+
+            @Override
+            public long nextLong() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                ready = false;
+                return next;
+            }
+        };
+    }
+
+    public static PrimitiveIterator.OfDouble iterator(TSpliterator.OfDouble spliterator) {
+        Objects.requireNonNull(spliterator);
+        return new PrimitiveIterator.OfDouble() {
+            boolean ready;
+            double next;
+
+            @Override
+            public boolean hasNext() {
+                if (!ready) {
+                    ready = spliterator.tryAdvance((DoubleConsumer) t -> next = t);
+                }
+                return ready;
+            }
+
+            @Override
+            public double nextDouble() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                ready = false;
+                return next;
+            }
+        };
+    }
+
+    public abstract static class AbstractSpliterator<T> implements TSpliterator<T> {
+        private long est;
+        private final int characteristics;
+
+        protected AbstractSpliterator(long est, int additionalCharacteristics) {
+            this.est = est;
+            this.characteristics = (additionalCharacteristics & SIZED) != 0
+                    ? additionalCharacteristics | SUBSIZED
+                    : additionalCharacteristics;
+        }
+
+        @Override
+        public TSpliterator<T> trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return est;
+        }
+
+        @Override
+        public int characteristics() {
+            return characteristics;
+        }
+    }
+
+    public abstract static class AbstractIntSpliterator implements TSpliterator.OfInt {
+        private long est;
+        private final int characteristics;
+
+        protected AbstractIntSpliterator(long est, int additionalCharacteristics) {
+            this.est = est;
+            this.characteristics = (additionalCharacteristics & SIZED) != 0
+                    ? additionalCharacteristics | SUBSIZED
+                    : additionalCharacteristics;
+        }
+
+        @Override
+        public TSpliterator.OfInt trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return est;
+        }
+
+        @Override
+        public int characteristics() {
+            return characteristics;
+        }
+    }
+
+    public abstract static class AbstractLongSpliterator implements TSpliterator.OfLong {
+        private long est;
+        private final int characteristics;
+
+        protected AbstractLongSpliterator(long est, int additionalCharacteristics) {
+            this.est = est;
+            this.characteristics = (additionalCharacteristics & SIZED) != 0
+                    ? additionalCharacteristics | SUBSIZED
+                    : additionalCharacteristics;
+        }
+
+        @Override
+        public TSpliterator.OfLong trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return est;
+        }
+
+        @Override
+        public int characteristics() {
+            return characteristics;
+        }
+    }
+
+    public abstract static class AbstractDoubleSpliterator implements TSpliterator.OfDouble {
+        private long est;
+        private final int characteristics;
+
+        protected AbstractDoubleSpliterator(long est, int additionalCharacteristics) {
+            this.est = est;
+            this.characteristics = (additionalCharacteristics & SIZED) != 0
+                    ? additionalCharacteristics | SUBSIZED
+                    : additionalCharacteristics;
+        }
+
+        @Override
+        public TSpliterator.OfDouble trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return est;
+        }
+
+        @Override
+        public int characteristics() {
+            return characteristics;
+        }
+    }
+
+    static final class EmptySpliterator<T> implements TSpliterator<T> {
+        @Override
+        public boolean tryAdvance(Consumer<? super T> action) {
+            Objects.requireNonNull(action);
+            return false;
+        }
+
+        @Override
+        public void forEachRemaining(Consumer<? super T> action) {
+            Objects.requireNonNull(action);
+        }
+
+        @Override
+        public TSpliterator<T> trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return 0;
+        }
+
+        @Override
+        public int characteristics() {
+            return SIZED | SUBSIZED;
+        }
+    }
+
+    static final class EmptyIntSpliterator implements TSpliterator.OfInt {
+        @Override
+        public boolean tryAdvance(IntConsumer action) {
+            Objects.requireNonNull(action);
+            return false;
+        }
+
+        @Override
+        public TSpliterator.OfInt trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return 0;
+        }
+
+        @Override
+        public int characteristics() {
+            return SIZED | SUBSIZED;
+        }
+    }
+
+    static final class EmptyLongSpliterator implements TSpliterator.OfLong {
+        @Override
+        public boolean tryAdvance(LongConsumer action) {
+            Objects.requireNonNull(action);
+            return false;
+        }
+
+        @Override
+        public TSpliterator.OfLong trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return 0;
+        }
+
+        @Override
+        public int characteristics() {
+            return SIZED | SUBSIZED;
+        }
+    }
+
+    static final class EmptyDoubleSpliterator implements TSpliterator.OfDouble {
+        @Override
+        public boolean tryAdvance(DoubleConsumer action) {
+            Objects.requireNonNull(action);
+            return false;
+        }
+
+        @Override
+        public TSpliterator.OfDouble trySplit() {
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return 0;
+        }
+
+        @Override
+        public int characteristics() {
+            return SIZED | SUBSIZED;
+        }
     }
 }

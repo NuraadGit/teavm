@@ -19,7 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import org.teavm.classlib.java.net.TURI;
 
-public interface TPath extends Comparable<TPath>, Iterable<TPath> {
+public interface TPath extends Comparable<TPath>, Iterable<TPath>, TWatchable {
     static TPath of(String first, String... more) {
         return TFileSystems.getDefault().getPath(first, more);
     }
@@ -82,6 +82,17 @@ public interface TPath extends Comparable<TPath>, Iterable<TPath> {
 
     @Override
     int compareTo(TPath o);
+
+    @Override
+    default TWatchKey register(TWatchService watcher, TWatchEvent.Kind<?>[] events, TWatchEvent.Modifier... modifiers)
+            throws IOException {
+        throw new TProviderMismatchException();
+    }
+
+    @Override
+    default TWatchKey register(TWatchService watcher, TWatchEvent.Kind<?>... events) throws IOException {
+        return register(watcher, events, new TWatchEvent.Modifier[0]);
+    }
 
     default File toFile() {
         if (getFileSystem() != TFileSystems.getDefault()) {
