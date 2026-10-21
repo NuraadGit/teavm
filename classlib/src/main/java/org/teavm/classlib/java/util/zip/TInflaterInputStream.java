@@ -126,17 +126,19 @@ public class TInflaterInputStream extends FilterInputStream {
         }
     }
 
+    private byte[] skipBuf;
+
     @Override
     public long skip(long nbytes) throws IOException {
         if (nbytes >= 0) {
-            if (buf == null) {
-                buf = new byte[(int) Math.min(nbytes, BUF_SIZE)];
+            if (skipBuf == null) {
+                skipBuf = new byte[512];
             }
             long count = 0;
             long rem;
             while (count < nbytes) {
                 rem = nbytes - count;
-                int x = read(buf, 0, rem > buf.length ? buf.length : (int) rem);
+                int x = read(skipBuf, 0, rem > skipBuf.length ? skipBuf.length : (int) rem);
                 if (x == -1) {
                     return count;
                 }
