@@ -48,7 +48,7 @@ public class TSimpleLongStreamSpliterator implements Spliterator.OfLong {
                 return false;
             });
         }
-        return true;
+        return foundItems;
     }
 
     @Override

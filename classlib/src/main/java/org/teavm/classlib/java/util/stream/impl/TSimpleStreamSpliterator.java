@@ -53,7 +53,7 @@ public class TSimpleStreamSpliterator<T> implements Spliterator<T> {
                 return false;
             });
         }
-        return true;
+        return foundItems;
     }
 
     @Override

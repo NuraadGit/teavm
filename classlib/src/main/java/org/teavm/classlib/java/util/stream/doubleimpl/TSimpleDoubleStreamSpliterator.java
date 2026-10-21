@@ -48,7 +48,7 @@ public class TSimpleDoubleStreamSpliterator implements Spliterator.OfDouble {
                 return false;
             });
         }
-        return true;
+        return foundItems;
     }
 
     @Override

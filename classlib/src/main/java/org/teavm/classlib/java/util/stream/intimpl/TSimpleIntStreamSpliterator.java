@@ -48,7 +48,7 @@ public class TSimpleIntStreamSpliterator implements Spliterator.OfInt {
                 return false;
             });
         }
-        return true;
+        return foundItems;
     }
 
     @Override
