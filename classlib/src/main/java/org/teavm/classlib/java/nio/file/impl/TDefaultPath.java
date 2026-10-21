@@ -43,7 +43,7 @@ public class TDefaultPath implements TPath {
         if (!(watcher instanceof TPollingWatchService)) {
             throw new TProviderMismatchException();
         }
-        var vfile = fs.vfs.getFile(pathString);
+        var vfile = fs.vfs().getFile(pathString);
         if (vfile == null || !vfile.isDirectory()) {
             throw new TNotDirectoryException(pathString);
         }
@@ -123,7 +123,7 @@ public class TDefaultPath implements TPath {
         if (otherPath.pathString.isEmpty()) {
             return pathString.isEmpty();
         }
-        if (fs.vfs.isWindows()) {
+        if (fs.vfs().isWindows()) {
             if (pathString.length() < otherPath.pathString.length()
                     || !pathString.regionMatches(true, 0, otherPath.pathString, 0, otherPath.pathString.length())) {
                 return false;
@@ -147,7 +147,7 @@ public class TDefaultPath implements TPath {
             return false;
         }
         var otherPath = (TDefaultPath) other;
-        if (fs.vfs.isWindows()) {
+        if (fs.vfs().isWindows()) {
             if (pathString.length() < otherPath.pathString.length()
                     || !pathString.regionMatches(true, pathString.length() - otherPath.pathString.length(),
                     otherPath.pathString, 0, otherPath.pathString.length())) {
@@ -239,7 +239,7 @@ public class TDefaultPath implements TPath {
                     || segments[index + 1] != otherPath.segments[index + 1]) {
                 break;
             }
-            if (!pathString.regionMatches(fs.vfs.isWindows(), segments[index] + 1, otherPath.pathString,
+            if (!pathString.regionMatches(fs.vfs().isWindows(), segments[index] + 1, otherPath.pathString,
                     segments[index] + 1, segments[index + 1] - segments[index] - 1)) {
                 break;
             }
@@ -262,8 +262,8 @@ public class TDefaultPath implements TPath {
     }
 
     private String toAbsolutePathString() {
-        var userdir = fs.vfs.getUserDir();
-        if (fs.vfs.isWindows()) {
+        var userdir = fs.vfs().getUserDir();
+        if (fs.vfs().isWindows()) {
             userdir = userdir.replace('\\', '/');
         }
 
@@ -289,7 +289,7 @@ public class TDefaultPath implements TPath {
     @Override
     public TPath toRealPath(TLinkOption... options) throws IOException {
         var pathString = toAbsolutePath().normalize().pathString;
-        return new TDefaultPath(fs, fs.vfs.canonicalize(pathString));
+        return new TDefaultPath(fs, fs.vfs().canonicalize(pathString));
     }
 
     @Override
@@ -298,7 +298,7 @@ public class TDefaultPath implements TPath {
         if (this.fs != other.fs) {
             throw new ClassCastException();
         }
-        return fs.vfs.isWindows()
+        return fs.vfs().isWindows()
                 ? pathString.compareToIgnoreCase(other.pathString)
                 : pathString.compareTo(other.pathString);
     }
@@ -339,14 +339,14 @@ public class TDefaultPath implements TPath {
         if (fs != other.fs) {
             return false;
         }
-        return fs.vfs.isWindows()
+        return fs.vfs().isWindows()
             ? pathString.equalsIgnoreCase(other.pathString)
             : pathString.equals(other.pathString);
     }
 
     @Override
     public int hashCode() {
-        return fs.vfs.isWindows() ? pathString.toLowerCase().hashCode() : pathString.hashCode();
+        return fs.vfs().isWindows() ? pathString.toLowerCase().hashCode() : pathString.hashCode();
     }
 
     @Override

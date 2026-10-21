@@ -101,7 +101,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             }
         }
         var defaultPath = (TDefaultPath) path;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.isFile()) {
             throw new NoSuchFileException(defaultPath.pathString);
         }
@@ -155,16 +155,16 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
         }
 
         var defaultPath = (TDefaultPath) path;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             if (!create) {
                 throw new NoSuchFileException(defaultPath.pathString);
             }
             var parentPath = defaultPath.getParent();
-            var parentVfile = defaultPath.getFileSystem().vfs.getFile(
+            var parentVfile = defaultPath.getFileSystem().vfs().getFile(
                     parentPath != null ? parentPath.pathString : ".");
             parentVfile.createFile(defaultPath.getFileName().toString());
-            vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+            vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         } else if (vfile.isDirectory() || checkThatDoesNotExist) {
             throw new FileAlreadyExistsException(defaultPath.pathString);
         }
@@ -223,7 +223,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             throw new IllegalArgumentException("APPEND + READ/TRUNCATE_EXISTING not allowed");
         }
         var defaultPath = (TDefaultPath) path;
-        var vfs = defaultPath.getFileSystem().vfs;
+        var vfs = defaultPath.getFileSystem().vfs();
         var vfile = vfs.getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             if (!write || (!create && !createNew)) {
@@ -255,7 +255,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
     @Override
     public TFileStore getFileStore(TPath path) throws IOException {
         var defaultPath = (TDefaultPath) path;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             throw new NoSuchFileException(defaultPath.pathString);
         }
@@ -283,7 +283,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             @Override
             public void setTimes(TFileTime lastModifiedTime, TFileTime lastAccessTime, TFileTime createTime)
                     throws IOException {
-                var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+                var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
                 if (vfile == null || !vfile.exists()) {
                     throw new NoSuchFileException(defaultPath.pathString);
                 }
@@ -298,7 +298,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
     public TDirectoryStream<TPath> newDirectoryStream(TPath dir, TDirectoryStream.Filter<? super TPath> filter) throws
             IOException {
         var defaultPath = (TDefaultPath) dir;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             throw new NoSuchFileException(defaultPath.pathString);
         }
@@ -363,11 +363,11 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
         if (parent == null) {
             parent = defaultPath.getFileSystem().getPath(".");
         }
-        var vfile = defaultPath.getFileSystem().vfs.getFile(parent.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(parent.pathString);
         if (vfile == null || !vfile.isDirectory()) {
             throw new NoSuchFileException(parent.pathString);
         }
-        var childVfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var childVfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (childVfile != null && childVfile.exists()) {
             throw new TFileAlreadyExistsException(defaultPath.pathString);
         }
@@ -379,7 +379,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
     @Override
     public void delete(TPath path) throws IOException {
         var defaultPath = (TDefaultPath) path;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             throw new NoSuchFileException(defaultPath.pathString);
         }
@@ -411,7 +411,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
         var defaultSource = (TDefaultPath) source;
         var defaultTarget = (TDefaultPath) target;
 
-        var srcVfile = defaultSource.getFileSystem().vfs.getFile(defaultSource.pathString);
+        var srcVfile = defaultSource.getFileSystem().vfs().getFile(defaultSource.pathString);
         if (srcVfile == null || !srcVfile.isFile()) {
             if (!srcVfile.exists()) {
                 throw new NoSuchFileException(defaultSource.pathString);
@@ -423,7 +423,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             return;
         }
 
-        var targetVfile = defaultTarget.getFileSystem().vfs.getFile(defaultTarget.pathString);
+        var targetVfile = defaultTarget.getFileSystem().vfs().getFile(defaultTarget.pathString);
         if (targetVfile != null && targetVfile.exists()) {
             if (!replace) {
                 throw new FileAlreadyExistsException(defaultTarget.pathString);
@@ -435,9 +435,9 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             if (targetParent == null) {
                 targetParent = defaultTarget.getFileSystem().getPath(".");
             }
-            var parentVfile = defaultTarget.getFileSystem().vfs.getFile(targetParent.pathString);
+            var parentVfile = defaultTarget.getFileSystem().vfs().getFile(targetParent.pathString);
             parentVfile.createFile(defaultTarget.getFileName().toString());
-            targetVfile = defaultTarget.getFileSystem().vfs.getFile(defaultTarget.pathString);
+            targetVfile = defaultTarget.getFileSystem().vfs().getFile(defaultTarget.pathString);
         }
 
         try (var input = new TFileInputStream(srcVfile.createAccessor(true, false, false));
@@ -466,7 +466,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
         var defaultSource = (TDefaultPath) source;
         var defaultTarget = (TDefaultPath) target;
 
-        var srcVfile = defaultSource.getFileSystem().vfs.getFile(defaultSource.pathString);
+        var srcVfile = defaultSource.getFileSystem().vfs().getFile(defaultSource.pathString);
         if (srcVfile == null || !srcVfile.isFile()) {
             if (!srcVfile.exists()) {
                 throw new NoSuchFileException(defaultSource.pathString);
@@ -478,7 +478,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             return;
         }
 
-        var targetVfile = defaultTarget.getFileSystem().vfs.getFile(defaultTarget.pathString);
+        var targetVfile = defaultTarget.getFileSystem().vfs().getFile(defaultTarget.pathString);
         if (targetVfile != null && targetVfile.exists()) {
             if (!replace) {
                 throw new FileAlreadyExistsException(defaultTarget.pathString);
@@ -490,7 +490,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
         if (targetParent == null) {
             targetParent = defaultTarget.getFileSystem().getPath(".");
         }
-        var parentVfile = defaultTarget.getFileSystem().vfs.getFile(targetParent.pathString);
+        var parentVfile = defaultTarget.getFileSystem().vfs().getFile(targetParent.pathString);
         if (!parentVfile.isDirectory()) {
             throw new FileSystemException(defaultTarget.pathString);
         }
@@ -501,7 +501,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
     public boolean isSameFile(TPath path, TPath path2) throws IOException {
         var defaultPath = (TDefaultPath) path;
         var defaultPath2 = (TDefaultPath) path2;
-        return defaultPath.getFileSystem().vfs == defaultPath2.getFileSystem().vfs
+        return defaultPath.getFileSystem().vfs() == defaultPath2.getFileSystem().vfs()
                 && defaultPath.toAbsolutePath().pathString.equals(defaultPath2.toAbsolutePath().pathString);
     }
 
@@ -513,7 +513,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
     @Override
     public void checkAccess(TPath path, TAccessMode... modes) throws IOException {
         var defaultPath = (TDefaultPath) path;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             throw new NoSuchFileException(defaultPath.pathString);
         }
@@ -542,7 +542,7 @@ public class TDefaultFileSystemProvider extends TFileSystemProvider {
             throw new UnsupportedOperationException();
         }
         var defaultPath = (TDefaultPath) path;
-        var vfile = defaultPath.getFileSystem().vfs.getFile(defaultPath.pathString);
+        var vfile = defaultPath.getFileSystem().vfs().getFile(defaultPath.pathString);
         if (vfile == null || !vfile.exists()) {
             throw new NoSuchFileException(defaultPath.pathString);
         }

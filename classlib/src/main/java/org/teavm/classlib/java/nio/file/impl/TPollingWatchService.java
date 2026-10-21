@@ -161,14 +161,14 @@ final class TPollingWatchService implements TWatchService {
 
         private Map<String, Long> list() {
             Map<String, Long> result = new HashMap<>();
-            VirtualFile dirFile = dir.getFileSystem().vfs.getFile(dir.pathString);
+            VirtualFile dirFile = dir.getFileSystem().vfs().getFile(dir.pathString);
             if (dirFile == null || !dirFile.isDirectory()) {
                 return null;
             }
             String[] names = dirFile.listFiles();
             if (names != null) {
                 for (String name : names) {
-                    VirtualFile child = dir.getFileSystem().vfs.getFile(dir.resolve(name).toString());
+                    VirtualFile child = dir.getFileSystem().vfs().getFile(dir.resolve(name).toString());
                     result.put(name, child != null ? child.lastModified() : 0L);
                 }
             }

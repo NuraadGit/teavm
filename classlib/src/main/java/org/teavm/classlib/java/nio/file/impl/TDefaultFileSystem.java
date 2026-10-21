@@ -28,11 +28,13 @@ import org.teavm.runtime.fs.VirtualFileSystem;
 import org.teavm.runtime.fs.VirtualFileSystemProvider;
 
 public class TDefaultFileSystem extends TFileSystem {
-    public final VirtualFileSystem vfs;
     public static final TDefaultFileSystem INSTANCE = new TDefaultFileSystem();
 
     private TDefaultFileSystem() {
-        this.vfs = VirtualFileSystemProvider.getInstance();
+    }
+
+    public VirtualFileSystem vfs() {
+        return VirtualFileSystemProvider.getInstance();
     }
 
     @Override
