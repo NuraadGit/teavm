@@ -48,6 +48,29 @@ public class ClassInitializerInsertionTransformer {
             initInsn.setClassName(method.getOwnerName());
             entryBlock.addFirst(initInsn);
         }
+        if (method.getName().equals("<clinit>")) {
+            String parent = findInitializedAncestor(cls);
+            if (parent != null) {
+                InitClassInstruction initInsn = new InitClassInstruction();
+                initInsn.setClassName(parent);
+                program.basicBlockAt(0).addFirst(initInsn);
+            }
+        }
+    }
+
+    private String findInitializedAncestor(ClassReader cls) {
+        String parentName = cls.getParent();
+        while (parentName != null) {
+            ClassReader parent = classes.get(parentName);
+            if (parent == null) {
+                return null;
+            }
+            if (parent.getMethod(clinitDescriptor) != null && classInitializerInfo.isDynamicInitializer(parentName)) {
+                return parentName;
+            }
+            parentName = parent.getParent();
+        }
+        return null;
     }
 
     private static boolean needsClinitCall(MethodReader method) {

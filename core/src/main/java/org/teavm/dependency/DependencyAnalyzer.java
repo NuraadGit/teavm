@@ -483,6 +483,9 @@ public abstract class DependencyAnalyzer implements DependencyInfo {
 
     void initClass(ClassDependency cls, CallLocation location) {
         ClassReader reader = cls.getClassReader();
+        if (reader.getParent() != null) {
+            linkClass(reader.getParent()).initClass(location);
+        }
         MethodReader method = reader.getMethod(CLINIT_METHOD);
         if (method != null) {
             deferredTasks.add(() -> {
