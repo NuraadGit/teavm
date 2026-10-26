@@ -182,14 +182,15 @@ public class TDefaultPath implements TPath {
                 if (resultSegmentIndex > 0) {
                     resultIndex = resultSegments[--resultSegmentIndex];
                 } else if (!abs) {
-                    start = Math.max(0, start - 1);
-                    pathString.getChars(start, end, result, resultIndex);
-                    resultIndex += end - start;
+                    var from = resultIndex == 0 ? start : start - 1;
+                    pathString.getChars(from, end, result, resultIndex);
+                    resultIndex += end - from;
                 }
             } else if (start + 1 != end || pathString.charAt(start) != '.') {
                 resultSegments[resultSegmentIndex++] = resultIndex;
-                pathString.getChars(start - 1, end, result, resultIndex);
-                resultIndex += end - start + 1;
+                var from = resultIndex == 0 && !abs ? start : start - 1;
+                pathString.getChars(from, end, result, resultIndex);
+                resultIndex += end - from;
             }
         }
         if (resultIndex == pathString.length()) {
