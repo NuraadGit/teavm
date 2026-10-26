@@ -20,11 +20,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import org.teavm.classlib.java.net.TURI;
+import org.teavm.classlib.java.nio.channels.TChannels;
 import org.teavm.classlib.java.nio.channels.TFileChannel;
 import org.teavm.classlib.java.nio.channels.TSeekableByteChannel;
 import org.teavm.classlib.java.nio.file.TAccessMode;
@@ -36,6 +38,7 @@ import org.teavm.classlib.java.nio.file.TLinkOption;
 import org.teavm.classlib.java.nio.file.TNoSuchFileException;
 import org.teavm.classlib.java.nio.file.TOpenOption;
 import org.teavm.classlib.java.nio.file.TPath;
+import org.teavm.classlib.java.nio.file.TStandardOpenOption;
 import org.teavm.classlib.java.nio.file.attribute.TBasicFileAttributes;
 import org.teavm.classlib.java.nio.file.attribute.TFileAttribute;
 import org.teavm.classlib.java.nio.file.attribute.TFileAttributeView;
@@ -58,12 +61,31 @@ public abstract class TFileSystemProvider {
     public abstract TFileSystem newFileSystem(TPath path, Map<String, ?> env) throws IOException;
 
     public InputStream newInputStream(TPath path, TOpenOption... options) throws IOException {
-        throw new UnsupportedOperationException();
+        var opts = new HashSet<TOpenOption>(options.length);
+        for (var opt : options) {
+            if (opt == TStandardOpenOption.APPEND || opt == TStandardOpenOption.WRITE) {
+                throw new UnsupportedOperationException("'" + opt + "' not allowed");
+            }
+            opts.add(opt);
+        }
+        return TChannels.newInputStream(newByteChannel(path, opts));
     }
 
-    public
-    OutputStream newOutputStream(TPath path, TOpenOption... options) throws IOException {
-        throw new UnsupportedOperationException();
+    public OutputStream newOutputStream(TPath path, TOpenOption... options) throws IOException {
+        var opts = new HashSet<TOpenOption>(options.length + 3);
+        if (options.length == 0) {
+            opts.add(TStandardOpenOption.CREATE);
+            opts.add(TStandardOpenOption.TRUNCATE_EXISTING);
+        } else {
+            for (var opt : options) {
+                if (opt == TStandardOpenOption.READ) {
+                    throw new IllegalArgumentException("READ not allowed");
+                }
+                opts.add(opt);
+            }
+        }
+        opts.add(TStandardOpenOption.WRITE);
+        return TChannels.newOutputStream(newByteChannel(path, opts));
     }
 
     public TFileChannel newFileChannel(TPath path, Set<? extends TOpenOption> options, TFileAttribute<?>... attrs)
