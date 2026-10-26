@@ -49,6 +49,7 @@ public class LambdaMetafactorySubstitutor implements BootstrapMethodSubstitutor 
     private static final int FLAG_SERIALIZABLE = 1;
     private static final int FLAG_MARKERS = 2;
     private static final int FLAG_BRIDGES = 4;
+    private static final String INSTANCE_FIELD = "INSTANCE";
     private Map<MethodReference, Integer> lambdaIdsByMethod = new HashMap<>();
     private Map<MethodDescriptor, MethodDescriptor> descriptorCache = new HashMap<>();
     private List<String> fieldNameCache = new ArrayList<>();
@@ -172,11 +173,35 @@ public class LambdaMetafactorySubstitutor implements BootstrapMethodSubstitutor 
             dependencies.add(implementor.getParent());
         }
 
+        if (capturedVarCount == 0) {
+            createInstanceField(hierarchy, implementor, callerPe.getCurrentLocation());
+        }
+
         callSite.getAgent().submitClass(implementor);
         callSite.getAgent().getIncrementalCache().addDependencies(implementor.getName(),
                 dependencies.toArray(new String[0]));
 
+        if (capturedVarCount == 0) {
+            return callerPe.getField(implementor.getName(), INSTANCE_FIELD, ValueType.object(implementor.getName()));
+        }
         return callerPe.construct(ctor.getOwnerName(), callSite.getArguments().toArray(new ValueEmitter[0]));
+    }
+
+    private void createInstanceField(ClassHierarchy hierarchy, ClassHolder implementor, TextLocation location) {
+        FieldHolder field = new FieldHolder(INSTANCE_FIELD);
+        field.setLevel(AccessLevel.PUBLIC);
+        field.getModifiers().add(ElementModifier.STATIC);
+        field.setType(ValueType.object(implementor.getName()));
+        implementor.addField(field);
+
+        MethodHolder clinit = new MethodHolder("<clinit>", ValueType.VOID);
+        clinit.setLevel(AccessLevel.PUBLIC);
+        clinit.getModifiers().add(ElementModifier.STATIC);
+        ProgramEmitter pe = ProgramEmitter.create(clinit, hierarchy);
+        pe.setCurrentLocation(location);
+        pe.setField(implementor.getName(), INSTANCE_FIELD, pe.construct(implementor.getName()));
+        pe.exit();
+        implementor.addMethod(clinit);
     }
 
     private ValueEmitter tryConvertArgument(ValueEmitter arg, ValueType from, ValueType to) {
