@@ -169,6 +169,7 @@ public abstract class TSimpleStreamImpl<T> implements TStream<T> {
             while (next(consumer)) {
                 // go on
             }
+            array = consumer.array;
             if (consumer.index < array.length) {
                 array = Arrays.copyOf(array, consumer.index);
             }
@@ -346,6 +347,9 @@ public abstract class TSimpleStreamImpl<T> implements TStream<T> {
         @Override
         @SuppressWarnings("unchecked")
         public boolean test(T t) {
+            if (index == array.length) {
+                array = Arrays.copyOf(array, Math.max(16, array.length * 2));
+            }
             array[index++] = (A) t;
             return true;
         }

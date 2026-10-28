@@ -143,6 +143,7 @@ public abstract class TSimpleLongStreamImpl implements TLongStream {
             while (next(consumer)) {
                 // go on
             }
+            array = consumer.array;
             if (consumer.index < array.length) {
                 array = Arrays.copyOf(array, consumer.index);
             }
@@ -331,6 +332,9 @@ public abstract class TSimpleLongStreamImpl implements TLongStream {
 
         @Override
         public boolean test(long t) {
+            if (index == array.length) {
+                array = Arrays.copyOf(array, Math.max(16, array.length * 2));
+            }
             array[index++] = t;
             return true;
         }

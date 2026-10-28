@@ -142,6 +142,7 @@ public abstract class TSimpleDoubleStreamImpl implements TDoubleStream {
             while (next(consumer)) {
                 // go on
             }
+            array = consumer.array;
             if (consumer.index < array.length) {
                 array = Arrays.copyOf(array, consumer.index);
             }
@@ -325,6 +326,9 @@ public abstract class TSimpleDoubleStreamImpl implements TDoubleStream {
 
         @Override
         public boolean test(double t) {
+            if (index == array.length) {
+                array = Arrays.copyOf(array, Math.max(16, array.length * 2));
+            }
             array[index++] = t;
             return true;
         }

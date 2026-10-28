@@ -143,6 +143,7 @@ public abstract class TSimpleIntStreamImpl implements TIntStream {
             while (next(consumer)) {
                 // go on
             }
+            array = consumer.array;
             if (consumer.index < array.length) {
                 array = Arrays.copyOf(array, consumer.index);
             }
@@ -336,6 +337,9 @@ public abstract class TSimpleIntStreamImpl implements TIntStream {
 
         @Override
         public boolean test(int t) {
+            if (index == array.length) {
+                array = Arrays.copyOf(array, Math.max(16, array.length * 2));
+            }
             array[index++] = t;
             return true;
         }
