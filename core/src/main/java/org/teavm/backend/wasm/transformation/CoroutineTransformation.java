@@ -254,8 +254,8 @@ public class CoroutineTransformation {
             moveAllPreviousTo(block, block.getBody());
             process(start);
             if (!typeInference.typeStack.isEmpty() || inputTypes.isEmpty()) {
-                block.setType(functionTypes.get(new WasmSignature(List.copyOf(typeInference.typeStack),
-                        List.copyOf(inputTypes))).asBlock());
+                block.setType(functionTypes.get(new WasmSignature(mapToNullableTypes(typeInference.typeStack),
+                        mapToNullableTypes(inputTypes))).asBlock());
             }
         }
 
@@ -273,8 +273,8 @@ public class CoroutineTransformation {
             }
             var wrapper = new WasmBlock(false);
             if (!outputTypes.isEmpty() || inputTypes.isEmpty()) {
-                wrapper.setType(functionTypes.get(new WasmSignature(outputTypes, List.copyOf(inputTypes)))
-                        .asBlock());
+                wrapper.setType(functionTypes.get(new WasmSignature(mapToNullableTypes(outputTypes),
+                        mapToNullableTypes(inputTypes))).asBlock());
             }
             typeInference.typeStack.remove(typeInference.typeStack.size() - 1);
             minDepth = Math.min(minDepth, typeInference.typeStack.size());
@@ -296,8 +296,8 @@ public class CoroutineTransformation {
             } else {
                 var thenWrapper = new WasmBlock(false);
                 if (!inputTypes.isEmpty() || !typesAfterConditionCheck.isEmpty()) {
-                    thenWrapper.setType(functionTypes.get(new WasmSignature(typesAfterConditionCheck,
-                            List.copyOf(inputTypes))).asBlock());
+                    thenWrapper.setType(functionTypes.get(new WasmSignature(
+                            mapToNullableTypes(typesAfterConditionCheck), mapToNullableTypes(inputTypes))).asBlock());
                 }
                 moveAllPreviousTo(conditional, thenWrapper.getBody());
                 WasmInstructionUtil.negate(thenWrapper.getBody().getLast());

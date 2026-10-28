@@ -113,7 +113,9 @@ public class WasmGCClassGenerator implements WasmGCClassInfoProvider, WasmGCInit
     private final ReflectionTypes reflectionTypes;
     public final WasmGCTypeMapper typeMapper;
     private final WasmGCNameProvider names;
-    private WasmInstructionBuilder initializerFunctionStatements = new WasmInstructionList().builder();
+    private static final int INITIALIZER_CHUNK_SIZE = 256;
+    private final List<WasmInstructionList> initializerChunks = new ArrayList<>();
+    private int initializerChunkCount;
     private WasmFunction createPrimitiveClassFunction;
     private WasmFunction getArrayClassFunction;
     private WasmFunction fillArrayClassFunction;
@@ -254,24 +256,54 @@ public class WasmGCClassGenerator implements WasmGCClassInfoProvider, WasmGCInit
     public void contributeToInitializerDefinitions(WasmFunction function) {
     }
 
+    private WasmInstructionBuilder nextInitializerChunk() {
+        if (initializerChunkCount++ % INITIALIZER_CHUNK_SIZE == 0) {
+            initializerChunks.add(new WasmInstructionList());
+        }
+        return initializerChunks.get(initializerChunks.size() - 1).builder();
+    }
+
+    private void callInitializerChunk(WasmInstructionBuilder builder, WasmInstructionList chunk) {
+        var chunkFunction = new WasmFunction(functionTypes.of(null));
+        chunkFunction.setName("teavm@initializerChunk");
+        chunkFunction.getBody().builder().transferFrom(chunk);
+        module.functions.add(chunkFunction);
+        builder.call(chunkFunction);
+    }
+
     @Override
     public void contributeToInitializer(WasmFunction function) {
         var builder = function.getBody().builder();
-        builder.transferFrom(initializerFunctionStatements);
+        for (var chunk : initializerChunks) {
+            callInitializerChunk(builder, chunk);
+        }
+        initializerChunks.clear();
         var classInfoType = reflectionTypes.classInfo();
+        var chunk = new WasmInstructionList();
+        var chunkBuilder = chunk.builder();
+        var chunkClasses = 0;
         for (var classInfo : classInfoMap.values()) {
             if (classInfo.supertypeFunction != null) {
-                builder
+                chunkBuilder
                         .getGlobal(classInfo.pointer)
                         .funcRef(classInfo.supertypeFunction)
                         .structSet(classInfoType.structure(), classInfoType.supertypeFunctionIndex());
             }
             if (classInfo.initArrayFunction != null) {
-                builder
+                chunkBuilder
                         .getGlobal(classInfo.pointer)
                         .funcRef(classInfo.initArrayFunction)
                         .structSet(classInfoType.structure(), classInfoType.newArrayFunctionIndex());
             }
+            if (++chunkClasses == INITIALIZER_CHUNK_SIZE * 8) {
+                callInitializerChunk(builder, chunk);
+                chunk = new WasmInstructionList();
+                chunkBuilder = chunk.builder();
+                chunkClasses = 0;
+            }
+        }
+        if (!chunk.isEmpty()) {
+            callInitializerChunk(builder, chunk);
         }
         for (var consumer : staticFieldInitializers) {
             consumer.accept(function);
@@ -300,7 +332,7 @@ public class WasmGCClassGenerator implements WasmGCClassInfoProvider, WasmGCInit
             var finalClassInfo = classInfo;
             queue.add(() -> {
                 if (finalClassInfo.initializer != null) {
-                    finalClassInfo.initializer.accept(initializerFunctionStatements);
+                    finalClassInfo.initializer.accept(nextInitializerChunk());
                     finalClassInfo.initializer = null;
                 }
             });

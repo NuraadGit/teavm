@@ -59,6 +59,7 @@ public class WeakReferenceIntrinsic implements WasmGCBodyIntrinsic {
 
         var weakRefConstructor = getCreateWeakReferenceFunction();
         var body = function.getBody().builder();
+        body.getLocal(valueLocal).isNull().conditional().getThenBlock().builder().return_();
         body.getLocal(thisLocal);
 
         body.getLocal(valueLocal);
