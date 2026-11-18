@@ -209,6 +209,7 @@ public final class TTemplateCollections {
 
     static class NElementSet<T> extends AbstractImmutableSet<T> {
         private T[] data;
+        private Object[] table;
 
         /**
          * Throws an exception on duplicate elements.
@@ -250,6 +251,7 @@ public final class TTemplateCollections {
             }
 
             this.data = table;
+            this.table = hashTable(table);
         }
 
         /**
@@ -284,6 +286,7 @@ public final class TTemplateCollections {
             }
 
             this.data = result;
+            this.table = hashTable(result);
         }
 
         @Override
@@ -321,21 +324,57 @@ public final class TTemplateCollections {
             if (data.length == 0 || o == null) {
                 return false;
             }
-
-            int suggestedIndex = Math.abs(o.hashCode()) % data.length;
-            for (int i = suggestedIndex; i < data.length; ++i) {
-                if (data[i].equals(o)) {
+            Object[] table = this.table;
+            int mask = table.length - 1;
+            for (int i = mix(o.hashCode()) & mask;; i = (i + 1) & mask) {
+                Object element = table[i];
+                if (element == null) {
+                    return false;
+                }
+                if (element == o || element.equals(o)) {
                     return true;
                 }
             }
-            for (int i = 0; i < suggestedIndex; ++i) {
-                if (data[i].equals(o)) {
-                    return true;
-                }
-            }
-
-            return false;
         }
+    }
+
+    static int mix(int h) {
+        return h ^ (h >>> 16);
+    }
+
+    static int tableCapacity(int size) {
+        int capacity = 2;
+        while (capacity < size * 2) {
+            capacity <<= 1;
+        }
+        return capacity;
+    }
+
+    static Object[] hashTable(Object[] elements) {
+        Object[] table = new Object[tableCapacity(elements.length)];
+        int mask = table.length - 1;
+        for (Object element : elements) {
+            int i = mix(element.hashCode()) & mask;
+            while (table[i] != null) {
+                i = (i + 1) & mask;
+            }
+            table[i] = element;
+        }
+        return table;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <K, V> TMap.Entry<K, V>[] hashEntryTable(TMap.Entry<K, V>[] entries) {
+        TMap.Entry<K, V>[] table = new TMap.Entry[tableCapacity(entries.length)];
+        int mask = table.length - 1;
+        for (TMap.Entry<K, V> entry : entries) {
+            int i = mix(entry.getKey().hashCode()) & mask;
+            while (table[i] != null) {
+                i = (i + 1) & mask;
+            }
+            table[i] = entry;
+        }
+        return table;
     }
 
     static class SingleEntryMap<K, V> extends AbstractImmutableMap<K, V> {
@@ -468,16 +507,34 @@ public final class TTemplateCollections {
 
     static class NEtriesMap<K, V> extends AbstractImmutableMap<K, V> {
         private Entry<K, V>[] data;
+        private Entry<K, V>[] table;
         private AbstractImmutableSet<Entry<K, V>> entrySet;
 
         @SafeVarargs
         NEtriesMap(Entry<K, V>... data) {
             this.data = toEntryArray(data);
+            this.table = hashEntryTable(this.data);
         }
 
         @SuppressWarnings("unchecked")
         NEtriesMap(TMap<? extends K, ? extends V> map) {
             this.data = toEntryArray(map.entrySet().toArray(new TMap.Entry[0]));
+            this.table = hashEntryTable(this.data);
+        }
+
+        private Entry<K, V> find(Object key) {
+            Entry<K, V>[] table = this.table;
+            int mask = table.length - 1;
+            for (int i = mix(key.hashCode()) & mask;; i = (i + 1) & mask) {
+                Entry<K, V> entry = table[i];
+                if (entry == null) {
+                    return null;
+                }
+                Object entryKey = entry.getKey();
+                if (entryKey == key || entryKey.equals(key)) {
+                    return entry;
+                }
+            }
         }
 
         /**
@@ -489,7 +546,7 @@ public final class TTemplateCollections {
             Entry<K, V>[] table = new Entry[entries.length];
             Arrays.fill(table, null);
 
-            for (Entry<K, V> entry : entries) {
+            for (TMap.Entry<K, V> entry : entries) {
                 Objects.requireNonNull(entry.getKey());
                 Objects.requireNonNull(entry.getValue());
 
@@ -552,39 +609,16 @@ public final class TTemplateCollections {
             if (key == null || data.length == 0) {
                 return false;
             }
-            int suggestedIndex = Math.abs(key.hashCode()) % data.length;
-            for (int i = suggestedIndex; i < data.length; ++i) {
-                if (data[i].getKey().equals(key)) {
-                    return true;
-                }
-            }
-            for (int i = 0; i < suggestedIndex; ++i) {
-                if (data[i].getKey().equals(key)) {
-                    return true;
-                }
-            }
-            return false;
+            return find(key) != null;
         }
 
         @Override
         public V get(Object key) {
-            if (key == null) {
+            if (key == null || data.length == 0) {
                 return null;
             }
-            int suggestedIndex = Math.abs(key.hashCode()) % data.length;
-            for (int i = suggestedIndex; i < data.length; ++i) {
-                Entry<K, V> entry = data[i];
-                if (entry.getKey().equals(key)) {
-                    return entry.getValue();
-                }
-            }
-            for (int i = 0; i < suggestedIndex; ++i) {
-                Entry<K, V> entry = data[i];
-                if (entry.getKey().equals(key)) {
-                    return entry.getValue();
-                }
-            }
-            return null;
+            Entry<K, V> entry = find(key);
+            return entry != null ? entry.getValue() : null;
         }
 
         @Override
@@ -628,23 +662,11 @@ public final class TTemplateCollections {
                         }
 
                         Object key = e.getKey();
-                        if (key == null) {
+                        if (key == null || data.length == 0) {
                             return false;
                         }
-                        int suggestedIndex = Math.abs(key.hashCode()) % data.length;
-                        for (int i = suggestedIndex; i < data.length; ++i) {
-                            Entry<K, V> entry = data[i];
-                            if (entry.getKey().equals(key)) {
-                                return entry.getValue().equals(e.getValue());
-                            }
-                        }
-                        for (int i = 0; i < suggestedIndex; ++i) {
-                            Entry<K, V> entry = data[i];
-                            if (entry.getKey().equals(key)) {
-                                return entry.getValue().equals(e.getValue());
-                            }
-                        }
-                        return false;
+                        Entry<K, V> entry = find(key);
+                        return entry != null && entry.getValue().equals(e.getValue());
                     }
                 };
             }
